@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  todo-api:
+    build: .
+    container_name: todo-api
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+    # For live reload during local dev, mount source:
+    # volumes:
+    #   - ./src:/app/src
