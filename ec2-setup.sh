@@ -1,36 +1,37 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────
-# EC2 Setup Script — Amazon Linux 2023
+# EC2 Setup Script — Amazon Ubuntu 2023
 # Run this ONCE after SSH-ing into your fresh EC2 instance:
 #   chmod +x ec2-setup.sh && ./ec2-setup.sh
 # ─────────────────────────────────────────────────────────────────
 
-set -e  # Exit immediately if any command fails
+set -e
 
-echo "🔧 Updating system packages..."
-sudo dnf update -y
+echo "Updating system packages..."
+sudo apt update -y && sudo apt upgrade -y
 
-echo "🐙 Installing Git..."
-sudo dnf install -y git
+echo "Installing Git..."
+sudo apt install -y git
 
-echo "🐳 Installing Docker..."
-sudo dnf install -y docker
+echo "Installing Docker..."
+sudo apt install -y docker.io
 
-echo "▶️  Starting Docker service..."
+echo "Starting Docker service..."
 sudo systemctl start docker
-sudo systemctl enable docker  # Auto-start on reboot
+sudo systemctl enable docker
 
-echo "👤 Adding ec2-user to docker group (no sudo needed)..."
-sudo usermod -aG docker ec2-user
+echo "Adding ubuntu user to docker group..."
+sudo usermod -aG docker ubuntu
 
-echo "✅ Docker installed:"
+echo "Docker installed:"
 docker --version
+
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Setup complete! Log out and back in, then run:"
 echo ""
-echo "  git clone https://github.com/YOUR_USERNAME/todo-api.git"
+echo "  git clone https://github.com/AirZED/aws_demo.git"
 echo "  cd todo-api"
 echo "  docker build -t todo-api ."
 echo "  docker run -d -p 80:8080 --name todo-api todo-api"
