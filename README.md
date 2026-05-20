@@ -66,7 +66,49 @@ Hit with Postman → `GET http://localhost:8080/todos`
 
 ---
 
-### 🎤 STEP 2 — Walk through the Dockerfile (3 min)
+### 🎤 STEP 2 — Show environment variables (1 min)
+
+Copy the example file and open it:
+
+```bash
+cp .env.example .env
+```
+
+```env
+PORT=8080
+NODE_ENV=development
+APP_NAME=Todo API
+API_VERSION=1.0.0
+```
+
+**Say:** *"Instead of hardcoding values like the app name and version, we read them from environment variables. This means the same Docker image can behave differently in dev, staging, and production — just by swapping the env file."*
+
+Hit the health check to see the values in the response:
+
+```bash
+GET http://localhost:8080/
+```
+
+On EC2, pass vars at runtime:
+
+```bash
+docker run -d -p 80:8080 \
+  -e NODE_ENV=production \
+  -e APP_NAME="Todo API" \
+  -e API_VERSION=1.0.0 \
+  --name todo-api todo-api
+```
+
+Or use an env file:
+
+```bash
+docker run -d -p 80:8080 --env-file .env --name todo-api todo-api
+```
+
+---
+
+### 🎤 STEP 3 — Walk through the Dockerfile (3 min)
+
 
 Open `Dockerfile` in your editor and walk through it:
 
@@ -95,7 +137,7 @@ Hit it again in Postman — same result.
 
 ---
 
-### 🎤 STEP 3 — Push code to GitHub (1 min)
+### 🎤 STEP 4 — Push code to GitHub (1 min)
 
 ```bash
 git add .
@@ -107,7 +149,7 @@ git push origin main
 
 ---
 
-### 🎤 STEP 4 — SSH into EC2 (1 min)
+### 🎤 STEP 5 — SSH into EC2 (1 min)
 
 ```bash
 ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
@@ -126,7 +168,7 @@ Show `ec2-setup.sh` briefly.
 
 ---
 
-### 🎤 STEP 5 — Clone, Build & Run on EC2 (4 min)
+### 🎤 STEP 6 — Clone, Build & Run on EC2 (4 min)
 
 ```bash
 # Clone the repo from GitHub
@@ -152,7 +194,7 @@ docker logs todo-api
 
 ---
 
-### 🎤 STEP 6 — Hit the live URL 🎉 (2 min)
+### 🎤 STEP 7 — Hit the live URL 🎉 (2 min)
 
 Open browser → `http://YOUR_EC2_PUBLIC_IP`
 
@@ -165,7 +207,7 @@ Hit with Postman:
 
 ---
 
-### 🎤 STEP 7 — Explain the architecture (2 min)
+### 🎤 STEP 8 — Explain the architecture (2 min)
 
 Draw or display:
 

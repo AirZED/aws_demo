@@ -1,8 +1,11 @@
+import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import todoRoutes from "./routes/todos";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+const APP_NAME = process.env.APP_NAME || "Todo API";
+const API_VERSION = process.env.API_VERSION || "1.0.0";
 
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.json());
@@ -19,8 +22,8 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 // Health check — first thing to demo after deployment
 app.get("/", (_req: Request, res: Response) => {
   res.json({
-    message: "Todo API is running 🚀",
-    version: "1.0.0",
+    message: `${APP_NAME} is running 🚀`,
+    version: API_VERSION,
     environment: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),
   });
