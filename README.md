@@ -4,6 +4,45 @@ A todo app built with **Node.js + TypeScript + Express**, **PostgreSQL**, JWT au
 
 ---
 
+## ✅ Prerequisites
+
+**To run it locally (the core demo):**
+
+| Tool | Version | Why | Check |
+|---|---|---|---|
+| [Docker Engine / Docker Desktop](https://docs.docker.com/get-docker/) | 24+ | Runs the API, PostgreSQL and Adminer containers | `docker --version` |
+| Docker Compose **v2** (bundled with Docker Desktop) | 2.20+ | `docker compose` (with a space) starts everything | `docker compose version` |
+| [Git](https://git-scm.com/downloads) | any | Clone the repo, push to GitHub | `git --version` |
+| [Node.js](https://nodejs.org/) + npm | 20+ | Only for `npm run dev` outside Docker | `node -v` |
+| `curl` | any | Quick API calls in the demos | `curl --version` |
+| `openssl` | any | Generate `JWT_SECRET` (`openssl rand -hex 32`) | `openssl version` |
+
+Linux users: add yourself to the docker group so you don't need `sudo` (`sudo usermod -aG docker $USER`, then log out and back in).
+
+**Free ports on your machine:** `8080` (app), `8081` (Adminer), `5432` (PostgreSQL). If something already uses one, stop it first — e.g. don't run `npm run dev` and the Compose `todo-api` container at the same time.
+
+**Optional but recommended:**
+- [Postman](https://www.postman.com/downloads/) (or Insomnia / `curl`) to call the API.
+- A web browser — the app UI is at `http://localhost:8080`.
+
+**For the cloud deployment part (Steps 4–8):**
+- A [GitHub](https://github.com/) account and this repo pushed to it.
+- An [AWS account](https://aws.amazon.com/free/) with an EC2 instance (Ubuntu) — security group allowing inbound **22** (SSH, ideally your IP only) and **80** (HTTP).
+- The instance's key pair file (`.pem`), made private with `chmod 400 your-key.pem`.
+- An SSH client (built in on macOS/Linux/Windows 10+).
+
+**First-time setup (once):**
+```bash
+git clone https://github.com/AirZED/aws_demo.git
+cd aws_demo        # use the folder that contains docker-compose.yml
+cp .env.example .env
+# edit .env: set DB_PASSWORD and JWT_SECRET (openssl rand -hex 32)
+docker compose up -d --build
+# open http://localhost:8080
+```
+
+---
+
 ## 🗂️ Project Structure
 
 ```
