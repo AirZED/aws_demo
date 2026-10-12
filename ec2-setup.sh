@@ -14,7 +14,7 @@ echo "Installing Git..."
 sudo apt install -y git
 
 echo "Installing Docker..."
-sudo apt install -y docker.io
+sudo apt install -y docker.io docker-compose-v2
 
 echo "Starting Docker service..."
 sudo systemctl start docker
@@ -33,7 +33,7 @@ echo "  Setup complete! Log out and back in, then run:"
 echo ""
 echo "  git clone https://github.com/AirZED/aws_demo.git"
 echo "  cd todo-api"
-echo "  docker build -t todo-api ."
-echo "  docker run -d -p 80:8080 --name todo-api todo-api"
-echo "  docker logs todo-api"
+echo "  cp .env.example .env && nano .env   # set DB_PASSWORD"
+echo "  docker compose up -d --build"
+echo "  docker compose ps"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

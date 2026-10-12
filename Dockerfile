@@ -29,11 +29,21 @@ RUN npm install --omit=dev
 # Copy compiled JS from the builder stage
 COPY --from=builder /app/dist ./dist
 
+# Static frontend
+COPY public/ ./public/
+
 # The port our app listens on
 EXPOSE 8080
 
 # Set production environment
 ENV NODE_ENV=production
+
+# Run as the unprivileged "node" user (security best practice)
+USER node
+
+# Docker marks the container healthy/unhealthy based on this
+HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Start the app
 CMD ["node", "dist/index.js"]

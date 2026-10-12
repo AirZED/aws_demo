@@ -1,0 +1,47 @@
+name: CI
+
+# Runs automatically on every push and pull request — this is "Continuous Integration"
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx tsc --noEmit        # type-check
+      - run: npm run build           # compile
+
+      - name: Build Docker image
+        run: docker build -t todo-api .
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start stack and smoke-test it
+        env:
+          DB_USER: todo
+          DB_PASSWORD: ci_password
+          DB_NAME: tododb
+        run: |
+          printf "PORT=8080\nDB_USER=$DB_USER\nDB_PASSWORD=$DB_PASSWORD\nDB_NAME=$DB_NAME\nJWT_SECRET=$(openssl rand -hex 32)\n" > .env
+          docker compose up -d --build
+          for i in $(seq 1 30); do curl -sf localhost:8080/health && break || sleep 2; done
+          # /todos must reject anonymous requests (401), then work with a token
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8080/todos)" = "401"
+          TOKEN=$(curl -sf -XPOST localhost:8080/auth/register -H 'content-type: application/json' \
+            -d '{"email":"ci@example.com","password":"ci-password-123"}' | jq -r .token)
+          curl -sf localhost:8080/todos -H "Authorization: Bearer $TOKEN"
+          docker compose logs
+          docker compose down -v

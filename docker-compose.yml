@@ -1,13 +1,51 @@
-version: "3.9"
-
 services:
+  # ── Database ────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: todo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # data survives container restarts
+    ports:
+      - "127.0.0.1:5432:5432"             # only reachable from this machine (for psql demos)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Database viewer (web UI) ────────────────────────────────
+  # Open http://localhost:8081  (System: PostgreSQL, Server: db, user/password/db from .env)
+  adminer:
+    image: adminer:4
+    container_name: todo-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "127.0.0.1:8081:8080"             # localhost only — never expose a DB admin panel publicly
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── API ─────────────────────────────────────────────────────
   todo-api:
     build: .
     container_name: todo-api
+    restart: unless-stopped
     ports:
       - "8080:8080"
     env_file:
       - .env
-    # For live reload during local dev, mount source:
-    # volumes:
-    #   - ./src:/app/src
+    environment:
+      DB_HOST: db                         # containers reach each other by service name
+    depends_on:
+      db:
+        condition: service_healthy        # start API only when DB is ready
+
+volumes:
+  pgdata:

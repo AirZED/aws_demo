@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Todo API</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1c2330; --muted:#6b7585; --line:#e3e6eb; --accent:#2f6fed; --ok:#1a9d55; --bad:#d93b3b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#12151b; --card:#1b1f27; --text:#e8ebf0; --muted:#8e98a8; --line:#2a303b; --accent:#5b92ff; --ok:#3ccb7f; --bad:#ff6b6b; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,sans-serif; }
+  main { max-width:620px; margin:0 auto; padding:32px 16px; }
+  h1 { margin:0 0 4px; font-size:1.6rem; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+  .status { display:flex; flex-wrap:wrap; gap:8px 20px; font-size:.9rem; color:var(--muted); }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--muted); margin-right:6px; }
+  .dot.ok { background:var(--ok); } .dot.bad { background:var(--bad); }
+  form { display:flex; gap:8px; }
+  input[type=text] { flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; }
+  button { padding:10px 16px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; cursor:pointer; }
+  ul { list-style:none; margin:0; padding:0; }
+  li { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  li:last-child { border-bottom:0; }
+  li span { flex:1; } li.done span { text-decoration:line-through; color:var(--muted); }
+  li button { background:none; color:var(--muted); padding:4px 8px; }
+  li button:hover { color:var(--bad); }
+  .tabs { display:flex; gap:8px; margin-bottom:12px; }
+  .tabs button { flex:1; background:none; color:var(--muted); border:1px solid var(--line); }
+  .tabs button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  #authForm { flex-direction:column; }
+  .who { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:.9rem; color:var(--muted); }
+  .who button { background:none; color:var(--accent); padding:4px 8px; }
+  .msg { margin:8px 0 0; font-size:.9rem; color:var(--bad); min-height:1.2em; }
+  [hidden] { display:none !important; }
+  .empty, .err { color:var(--muted); text-align:center; padding:12px 0; } .err { color:var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Todo API</h1>
+  <p class="sub">Plain HTML frontend with JWT login, served by the same container as the API.</p>
+
+  <div class="card status" id="status" aria-live="polite">Checking status…</div>
+
+  <div class="card" id="authCard" hidden>
+    <div class="tabs" role="tablist">
+      <button type="button" id="tabLogin" class="on">Log in</button>
+      <button type="button" id="tabRegister">Register</button>
+    </div>
+    <form id="authForm">
+      <input type="email" id="email" placeholder="Email" autocomplete="email" aria-label="Email" required>
+      <input type="password" id="password" placeholder="Password (min 8 characters)" autocomplete="current-password" aria-label="Password" minlength="8" required>
+      <button type="submit" id="authSubmit">Log in</button>
+    </form>
+    <p class="msg" id="authMsg" role="alert"></p>
+  </div>
+
+  <div id="app" hidden>
+  <div class="card who"><span id="whoami"></span><button type="button" id="logout">Log out</button></div>
+
+  <div class="card">
+    <form id="form">
+      <input type="text" id="title" placeholder="Add a todo…" aria-label="New todo" required>
+      <button type="submit">Add</button>
+    </form>
+  </div>
+
+  <div class="card"><ul id="list"></ul></div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const list = $("list");
+
+// ── Session: the ONLY place that knows where the JWT is stored ─────────────
+// Today: localStorage. To move to HttpOnly cookies later, delete this storage,
+// drop the Authorization header in api(), and add `credentials: "same-origin"`.
+const session = {
+  get token() { return localStorage.getItem("token"); },
+  set(token) { localStorage.setItem("token", token); },
+  clear() { localStorage.removeItem("token"); },
+};
+
+async function api(path, opts = {}) {
+  const headers = { ...(opts.headers || {}) };
+  if (session.token) headers.Authorization = "Bearer " + session.token;
+  const res = await fetch(path, { ...opts, headers });
+  const body = await res.json();
+  if (res.status === 401 && session.token) { showAuth("Session expired — please log in again."); }
+  if (!res.ok) throw new Error(body.message || res.statusText);
+  return body;
+}
+
+// ── Auth UI ────────────────────────────────────────────────────────────────
+let mode = "login";
+function setMode(m) {
+  mode = m;
+  $("tabLogin").classList.toggle("on", m === "login");
+  $("tabRegister").classList.toggle("on", m === "register");
+  $("authSubmit").textContent = m === "login" ? "Log in" : "Create account";
+  $("password").autocomplete = m === "login" ? "current-password" : "new-password";
+  $("authMsg").textContent = "";
+}
+$("tabLogin").onclick = () => setMode("login");
+$("tabRegister").onclick = () => setMode("register");
+
+function showAuth(msg = "") {
+  session.clear();
+  $("app").hidden = true;
+  $("authCard").hidden = false;
+  $("authMsg").textContent = msg;
+}
+async function showApp(user) {
+  $("authCard").hidden = true;
+  $("app").hidden = false;
+  $("whoami").textContent = "Signed in as " + user.email;
+  loadTodos();
+}
+
+$("authForm").onsubmit = async (e) => {
+  e.preventDefault();
+  $("authMsg").textContent = "";
+  try {
+    const body = await api("/auth/" + mode, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: $("email").value, password: $("password").value }),
+    });
+    session.set(body.token);
+    $("password").value = "";
+    showApp(body.user);
+  } catch (err) {
+    $("authMsg").textContent = err.message;
+  }
+};
+
+$("logout").onclick = () => { showAuth(); list.replaceChildren(); };
+
+async function init() {
+  if (!session.token) return showAuth();
+  try { showApp((await api("/auth/me")).user); } catch { showAuth(); }
+}
+
+async function loadStatus() {
+  try {
+    const [info, health] = await Promise.all([
+      api("/info"),
+      fetch("/health").then((r) => r.json()),
+    ]);
+    const dbOk = health.database === "connected";
+    $("status").innerHTML =
+      `<span><span class="dot ok"></span>API ${info.version}</span>` +
+      `<span><span class="dot ${dbOk ? "ok" : "bad"}"></span>Database ${health.database}</span>` +
+      `<span>Env: ${info.environment}</span>`;
+  } catch {
+    $("status").innerHTML = `<span><span class="dot bad"></span>API unreachable</span>`;
+  }
+}
+
+async function loadTodos() {
+  try {
+    const { data } = await api("/todos");
+    list.replaceChildren();
+    if (!data.length) { list.innerHTML = '<li class="empty">Nothing yet — add one above.</li>'; return; }
+    for (const t of data) {
+      const li = document.createElement("li");
+      li.className = t.completed ? "done" : "";
+      const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: t.completed });
+      box.setAttribute("aria-label", "Toggle " + t.title);
+      box.onchange = () => act(() => api("/todos/" + t.id, { method: "PATCH" }));
+      const label = document.createElement("span");
+      label.textContent = t.title;           // textContent: no HTML injection
+      const del = document.createElement("button");
+      del.textContent = "✕"; del.setAttribute("aria-label", "Delete " + t.title);
+      del.onclick = () => act(() => api("/todos/" + t.id, { method: "DELETE" }));
+      li.append(box, label, del);
+      list.append(li);
+    }
+  } catch (e) {
+    list.innerHTML = `<li class="err">Could not load todos: ${e.message}</li>`;
+  }
+}
+
+async function act(fn) { try { await fn(); } catch (e) { alert(e.message); } loadTodos(); }
+
+$("form").onsubmit = (e) => {
+  e.preventDefault();
+  const title = $("title").value.trim();
+  if (!title) return;
+  act(() => api("/todos", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title }) }));
+  $("title").value = "";
+};
+
+loadStatus(); init();
+setInterval(loadStatus, 5000);   // live status: stop the DB during the demo and watch it flip
+</script>
+</body>
+</html>
