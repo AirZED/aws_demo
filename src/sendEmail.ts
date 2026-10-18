@@ -1,7 +1,11 @@
+import dotenv from 'dotenv'
+dotenv.config({ path: "../.env" })
+
+
 import nodemailer from "nodemailer";
 
-const password = "123456789"
-const email = "me@gmail.com"
+const password = process.env.PASSWORD
+const email = process.env.EMAIL
 
 const transporter = nodemailer.createTransport({
     host: "smtp.example.com",
@@ -13,3 +17,5 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+
+console.log("password: ", password, "email: ", email)
